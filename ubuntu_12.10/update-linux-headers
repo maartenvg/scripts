@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+"""
+=========================================================
+= Copyright (c) 2013 Maarten van Grootel
+= Licensed under the MIT license (see MIT-LICENSE.txt)
+=========================================================
+
+This tool prompts one at a time to install the missing 
+headers matching the currently installed Linux kernels. 
+
+Using the proprietary drivers from nvidia in Ubuntu 12.10 
+requires the right linux-headers. Unfortunately these are 
+not installed automatically after updating the kernel. 
+
+Running this tool after an update containing new kernels 
+will ensure that a reboot will not break the graphical 
+interface.
+
+usage: sudo ./update-linux-headers 
+"""
+import os, sys
+
+def main():
+    module_dir = "/lib/modules"
+
+    if os.geteuid() != 0:
+        sys.exit("This command needs root rights, run with sudo instead.")
+
+    kernel_versions = os.listdir(module_dir)
+    
+    if not kernel_versions:
+        sys.exit("No modules found in " + module_dir)   
+        
+    kernel_versions = sorted(kernel_versions)
+    headers = dict([find_headers(kernel_version) for kernel_version in kernel_versions])
+    
+    print "Found the following installed kernels:"
+    print ""
+    print "\n".join([header_to_string(header, exists) for header, exists in headers.items()])    
+    print ""
+
+    if False not in headers.values():
+        sys.exit("The headers for these kernels were already installed")        
+
+    for header, exists in headers.items():
+        if not exists:
+            prompt = "Installing " + header + ", are you sure? (Y/N) [N]:" 
+            answer = raw_input(prompt)
+    
+            if answer and (answer == 'y' or answer == 'Y'):
+                print "apt-get install " + header
+                os.system("apt-get install " + header)       
+            else:
+                continue
+
+    print "Done!"
+
+def find_headers(kernel):
+    header = "linux-headers-" + kernel
+    return (header, os.path.exists('/usr/src/' + header))
+
+def header_to_string(header, exists):
+    retval = "\t" + header
+    if not exists:
+        retval += " <--"
+    
+    return retval
+
+
+if __name__ == '__main__':
+    main()
