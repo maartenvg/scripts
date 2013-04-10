@@ -31,12 +31,11 @@ def main():
     if not kernel_versions:
         sys.exit("No modules found in " + module_dir)   
         
-    kernel_versions = sorted(kernel_versions)
     headers = dict([find_headers(kernel_version) for kernel_version in kernel_versions])
     
     print "Found the following installed kernels:"
     print ""
-    print "\n".join([header_to_string(header, exists) for header, exists in headers.items()])    
+    print "\n".join([header_to_string(header, exists) for header, exists in sorted(headers.items())])    
     print ""
 
     if False not in headers.values():
